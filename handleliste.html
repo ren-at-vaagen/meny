@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<title>Handleliste</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --bg2: #f5f5f3;
+  --bg3: #eeede9;
+  --text: #1a1a18;
+  --text2: #6b6b67;
+  --text3: #a0a09b;
+  --border: rgba(0,0,0,0.1);
+  --border2: rgba(0,0,0,0.18);
+  --radius: 10px;
+  --radius-lg: 14px;
+  --accent: #1a1a18;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a18;
+    --bg2: #252522;
+    --bg3: #2e2e2b;
+    --text: #f0efea;
+    --text2: #9a9a94;
+    --text3: #606059;
+    --border: rgba(255,255,255,0.1);
+    --border2: rgba(255,255,255,0.18);
+    --accent: #f0efea;
+  }
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.5;
+  padding-bottom: 90px;
+}
+
+/* Nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--bg);
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 0 8px;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.nav-btn.active { color: var(--text); }
+.nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Views */
+.view { display: none; padding: 0; }
+.view.active { display: block; }
+
+/* Header */
+.page-header {
+  padding: 20px 16px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 0.5px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.page-header h1 { font-size: 17px; font-weight: 600; }
+.header-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 4px 0;
+}
+.header-btn:hover { color: var(--text); }
+
+/* Filter chips */
+.chips-scroll {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 0.5px solid var(--border);
+}
+.chips-scroll::-webkit-scrollbar { display: none; }
+.chip {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 0.5px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  font-family: inherit;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* Recipe grid */
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  padding: 14px 16px;
+}
+.recipe-card {
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  cursor: pointer;
+  border: 0.5px solid transparent;
+  transition: border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.recipe-card:active { opacity: 0.7; }
+.recipe-card h3 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.recipe-card .meta { font-size: 12px; color: var(--text3); margin-bottom: 8px; }
+.tags-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.mini-tag { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: var(--bg3); color: var(--text2); }
+
+/* Detail view */
+.detail-header {
+  padding: 16px 16px 12px;
+  border-bottom: 0.5px solid var(--border);
+}
+.back-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text2);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 0 0 12px;
+}
+.back-row svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.detail-header h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.detail-header .meta { font-size: 13px; color: var(--text2); }
+
+.ingredient-section { padding: 0 16px; }
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); padding: 16px 0 8px; }
+.ingredient-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 15px;
+}
+.ingredient-row:last-child { border-bottom: none; }
+.ingredient-row input[type=checkbox] {
+  width: 20px; height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--text);
+  border-radius: 4px;
+}
+.ingredient-row.done span { text-decoration: line-through; color: var(--text3); }
+
+.action-bar {
+  padding: 14px 16px;
+  border-top: 0.5px solid var(--border);
+  position: sticky;
+  bottom: 70px;
+  background: var(--bg);
+}
+.primary-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.primary-btn:active { opacity: 0.75; }
+
+/* Shopping list */
+.store-bar {
+  padding: 10px 16px;
+  border-bottom: 0.5px solid var(--border);
+}
+.store-select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 14px;
+  background: var(--bg2);
+  color: var(--text);
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.shopping-section { padding: 0 16px; }
+.shopping-section-header {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 16px 0 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.shopping-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 15px;
+}
+.shopping-item:last-child { border-bottom: none; }
+.shopping-item input[type=checkbox] {
+  width: 20px; height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--text);
+}
+.shopping-item.done span { text-decoration: line-through; color: var(--text3); }
+.shopping-item .del-item {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Forms */
+.form-section { padding: 14px 16px; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 15px;
+  background: var(--bg2);
+  color: var(--text);
+  font-family: inherit;
+}
+.form-group textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
+.form-row { display: flex; gap: 8px; }
+.form-row .primary-btn { flex: 2; }
+.cancel-btn {
+  flex: 1;
+  padding: 13px;
+  background: var(--bg2);
+  color: var(--text2);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Manage */
+.manage-block {
+  margin: 0 16px 16px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.manage-block-header {
+  padding: 12px 14px;
+  background: var(--bg2);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 0.5px solid var(--border);
+}
+.manage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 14px;
+}
+.manage-row:last-child { border-bottom: none; }
+.manage-row-left { display: flex; align-items: center; gap: 8px; }
+.store-link { color: var(--text); cursor: pointer; font-weight: 500; }
+.store-link:hover { text-decoration: underline; }
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px 6px;
+  font-size: 18px;
+  line-height: 1;
+}
+.icon-btn:hover { color: var(--text); }
+.inline-add {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border-top: 0.5px solid var(--border);
+}
+.inline-add input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+}
+.inline-add button {
+  padding: 8px 16px;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.empty-state {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: var(--bg3); color: var(--text3); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text);
+  color: var(--bg);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 200;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.top-pad { padding-top: 8px; }
+</style>
+</head>
+<body>
+
+<div id="view-oppskrifter" class="view active">
+  <div class="page-header">
+    <h1>Oppskrifter</h1>
+    <button class="header-btn" onclick="showAddRecipe()">+ Legg til</button>
+  </div>
+  <div class="chips-scroll" id="group-chips"></div>
+  <div id="recipe-list-panel">
+    <div class="recipe-grid" id="recipe-grid"></div>
+  </div>
+  <div id="recipe-detail-panel" style="display:none">
+    <div class="detail-header">
+      <button class="back-row" onclick="showRecipeList()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Tilbake
+      </button>
+      <h2 id="detail-title"></h2>
+      <div class="meta" id="detail-meta"></div>
+    </div>
+    <div class="ingredient-section">
+      <div class="section-label">Ingredienser — huk av det du har</div>
+      <div id="ingredient-list"></div>
+    </div>
+    <div class="action-bar">
+      <button class="primary-btn" onclick="addToShoppingList()">Legg til i handleliste</button>
+    </div>
+  </div>
+  <div id="add-recipe-panel" style="display:none">
+    <div class="detail-header">
+      <button class="back-row" onclick="showRecipeList()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Tilbake
+      </button>
+      <h2>Ny oppskrift</h2>
+    </div>
+    <div class="form-section">
+      <div class="form-group">
+        <label>Navn</label>
+        <input type="text" id="new-name" placeholder="f.eks. Kjøttgryte i crockpot">
+      </div>
+      <div class="form-group">
+        <label>Grupper (kommaseparert)</label>
+        <input type="text" id="new-groups" placeholder="f.eks. crockpot, middag">
+      </div>
+      <div class="form-group">
+        <label>Ingredienser (én per linje)</label>
+        <textarea id="new-ingredients" placeholder="400g kjøttdeig&#10;1 løk&#10;2 hvitløksfedd&#10;1 boks hermetiske tomater"></textarea>
+      </div>
+      <div class="form-row">
+        <button class="cancel-btn" onclick="showRecipeList()">Avbryt</button>
+        <button class="primary-btn" onclick="saveRecipe()">Lagre</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view-handleliste" class="view">
+  <div class="page-header">
+    <h1>Handleliste</h1>
+    <button class="header-btn" onclick="clearDone()">Fjern ferdig</button>
+  </div>
+  <div class="store-bar">
+    <select class="store-select" id="store-select" onchange="renderShoppingList()">
+      <option value="">Ingen butikk valgt — vis etter kategori</option>
+    </select>
+  </div>
+  <div id="shopping-container"></div>
+</div>
+
+<div id="view-innstillinger" class="view">
+  <div class="page-header"><h1>Innstillinger</h1></div>
+  <div class="top-pad"></div>
+
+  <div class="manage-block">
+    <div class="manage-block-header">Grupper</div>
+    <div id="groups-list"></div>
+    <div class="inline-add">
+      <input type="text" id="new-group-input" placeholder="Ny gruppe..." onkeydown="if(event.key==='Enter')addGroup()">
+      <button onclick="addGroup()">Legg til</button>
+    </div>
+  </div>
+
+  <div class="manage-block">
+    <div class="manage-block-header">
+      Butikker
+      <span style="font-size:12px;font-weight:400;color:var(--text3)">Trykk på navn for å sette opp avdelinger</span>
+    </div>
+    <div id="stores-list"></div>
+    <div class="inline-add">
+      <input type="text" id="new-store-input" placeholder="Ny butikk..." onkeydown="if(event.key==='Enter')addStore()">
+      <button onclick="addStore()">Legg til</button>
+    </div>
+  </div>
+
+  <div class="manage-block" id="avdeling-block" style="display:none">
+    <div class="manage-block-header" id="avdeling-header">Avdelinger</div>
+    <div id="avdelinger-list"></div>
+    <div class="inline-add">
+      <input type="text" id="new-avdeling-input" placeholder="f.eks. Tørrmat, Frukt og grønt..." onkeydown="if(event.key==='Enter')addAvdeling()">
+      <button onclick="addAvdeling()">Legg til</button>
+    </div>
+    <div style="padding:10px 14px; font-size:12px; color:var(--text3); border-top:0.5px solid var(--border); background:var(--bg2)">
+      Ingredienser sorteres automatisk til avdelinger basert på type. Du kan endre sorteringen i handlelisten.
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchView('oppskrifter', this)">
+    <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    Oppskrifter
+  </button>
+  <button class="nav-btn" onclick="switchView('handleliste', this)">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    Handleliste
+  </button>
+  <button class="nav-btn" onclick="switchView('innstillinger', this)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Innstillinger
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_CATEGORIES = ['Frukt og grønt','Kjøtt og fisk','Meieri og egg','Brød og kornvarer','Tørrmat','Hermetikk','Krydder og saus','Frysevarer','Drikke','Annet'];
+
+let state = {
+  oppskrifter: [],
+  grupper: ['crockpot','rask','lett','bakt','vegetar','suppe','middag','frokost'],
+  butikker: [],
+  avdelinger: {},
+  handleliste: [],
+  aktivGruppe: 'alle',
+  aktivOppskrift: null,
+  valgtButikk: ''
+};
+
+function lagre() { try { localStorage.setItem('handleliste_app', JSON.stringify(state)); } catch(e) {} }
+function last() { try { const d = localStorage.getItem('handleliste_app'); if(d) { const p = JSON.parse(d); state = Object.assign(state, p); } } catch(e) {} }
+last();
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function switchView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  btn.classList.add('active');
+  if(name === 'oppskrifter') { showRecipeList(); renderOppskrifter(); }
+  if(name === 'handleliste') { renderStoreSelect(); renderShoppingList(); }
+  if(name === 'innstillinger') renderInnstillinger();
+}
+
+function guessCategory(text) {
+  const t = text.toLowerCase();
+  if(/melk|fløte|rømme|yoghurt|ost|smør|egg/.test(t)) return 'Meieri og egg';
+  if(/kjøtt|kylling|svin|laks|fisk|reke|bacon|pølse|biff|torsk|sei|makrell/.test(t)) return 'Kjøtt og fisk';
+  if(/løk|hvitløk|gulrot|tomat|salat|spinat|paprika|potet|zucchini|agurk|brokkoli|purre|sopp|kål|selleri/.test(t)) return 'Frukt og grønt';
+  if(/eple|banan|sitron|lime|appelsin|pære|bær/.test(t)) return 'Frukt og grønt';
+  if(/brød|pasta|ris|mel|havre|nudl/.test(t)) return 'Brød og kornvarer';
+  if(/olje|saus|eddik|soya|sennep|ketchup|kraft|buljong|dressing/.test(t)) return 'Krydder og saus';
+  if(/boks|hermetisk|bønne|linse|kikerter/.test(t)) return 'Hermetikk';
+  if(/frys|isen/.test(t)) return 'Frysevarer';
+  if(/vann|juice|brus|kaffe|te|øl|vin/.test(t)) return 'Drikke';
+  return 'Tørrmat';
+}
+
+// --- Oppskrifter ---
+function renderOppskrifter() {
+  const chips = document.getElementById('group-chips');
+  const allGrupper = ['alle', ...state.grupper];
+  chips.innerHTML = allGrupper.map(g =>
+    `<button class="chip ${state.aktivGruppe===g?'active':''}" onclick="filtrerGruppe('${g}')">${g==='alle'?'Alle':g}</button>`
+  ).join('');
+
+  const grid = document.getElementById('recipe-grid');
+  const vis = state.aktivGruppe==='alle' ? state.oppskrifter : state.oppskrifter.filter(r=>r.grupper.includes(state.aktivGruppe));
+  if(!vis.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">Ingen oppskrifter ennå.<br>Trykk <strong>+ Legg til</strong> for å starte.</div>`;
+    return;
+  }
+  grid.innerHTML = vis.map(r => {
+    const idx = state.oppskrifter.indexOf(r);
+    return `<div class="recipe-card" onclick="åpneOppskrift(${idx})">
+      <h3>${r.navn}</h3>
+      <div class="meta">${r.ingredienser.length} ingrediens${r.ingredienser.length!==1?'er':''}</div>
+      <div class="tags-row">${r.grupper.map(g=>`<span class="mini-tag">${g}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function filtrerGruppe(g) { state.aktivGruppe = g; renderOppskrifter(); }
+
+function showRecipeList() {
+  document.getElementById('recipe-list-panel').style.display='';
+  document.getElementById('recipe-detail-panel').style.display='none';
+  document.getElementById('add-recipe-panel').style.display='none';
+}
+
+function showAddRecipe() {
+  document.getElementById('recipe-list-panel').style.display='none';
+  document.getElementById('recipe-detail-panel').style.display='none';
+  document.getElementById('add-recipe-panel').style.display='';
+}
+
+function saveRecipe() {
+  const navn = document.getElementById('new-name').value.trim();
+  if(!navn) { toast('Oppskriften trenger et navn'); return; }
+  const grupper = document.getElementById('new-groups').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const linjer = document.getElementById('new-ingredients').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const ingredienser = linjer.map(l => ({ tekst: l, kategori: guessCategory(l) }));
+  grupper.forEach(g => { if(!state.grupper.includes(g)) state.grupper.push(g); });
+  state.oppskrifter.push({ navn, grupper, ingredienser });
+  lagre();
+  document.getElementById('new-name').value='';
+  document.getElementById('new-groups').value='';
+  document.getElementById('new-ingredients').value='';
+  showRecipeList();
+  renderOppskrifter();
+  toast('Oppskrift lagret');
+}
+
+function åpneOppskrift(idx) {
+  state.aktivOppskrift = idx;
+  const r = state.oppskrifter[idx];
+  document.getElementById('detail-title').textContent = r.navn;
+  document.getElementById('detail-meta').textContent = r.grupper.join(' · ');
+  const list = document.getElementById('ingredient-list');
+  list.innerHTML = r.ingredienser.map((ing, i) =>
+    `<div class="ingredient-row" id="ing-${i}">
+      <input type="checkbox" onchange="toggleIng(${i}, this.checked)">
+      <span>${ing.tekst}</span>
+    </div>`
+  ).join('');
+  document.getElementById('recipe-list-panel').style.display='none';
+  document.getElementById('recipe-detail-panel').style.display='';
+  document.getElementById('add-recipe-panel').style.display='none';
+}
+
+function toggleIng(i, checked) {
+  const row = document.getElementById('ing-'+i);
+  if(checked) row.classList.add('done'); else row.classList.remove('done');
+}
+
+function addToShoppingList() {
+  const r = state.oppskrifter[state.aktivOppskrift];
+  let antall = 0;
+  r.ingredienser.forEach((ing, i) => {
+    const row = document.getElementById('ing-'+i);
+    if(!row.classList.contains('done')) {
+      if(!state.handleliste.find(s=>s.tekst===ing.tekst)) {
+        state.handleliste.push({ tekst: ing.tekst, kategori: ing.kategori, ferdig: false });
+        antall++;
+      }
+    }
+  });
+  lagre();
+  toast(antall > 0 ? `${antall} vare${antall!==1?'r':''} lagt til` : 'Alt er allerede i listen');
+}
+
+// --- Handleliste ---
+function renderStoreSelect() {
+  const sel = document.getElementById('store-select');
+  sel.innerHTML = '<option value="">Ingen butikk valgt — vis etter kategori</option>' +
+    state.butikker.map(s=>`<option value="${s}" ${state.valgtButikk===s?'selected':''}>${s}</option>`).join('');
+}
+
+function renderShoppingList() {
+  state.valgtButikk = document.getElementById('store-select').value;
+  const container = document.getElementById('shopping-container');
+  if(!state.handleliste.length) {
+    container.innerHTML = '<div class="empty-state">Handlelisten er tom.<br>Gå til en oppskrift og trykk<br>«Legg til i handleliste».</div>';
+    return;
+  }
+  const grupper = {};
+  state.handleliste.forEach((item, idx) => {
+    let key = item.kategori || 'Annet';
+    if(state.valgtButikk && state.avdelinger[state.valgtButikk]) {
+      for(const [avd, kats] of Object.entries(state.avdelinger[state.valgtButikk])) {
+        if(kats.includes(item.kategori)) { key = avd; break; }
+      }
+    }
+    if(!grupper[key]) grupper[key] = [];
+    grupper[key].push({ item, idx });
+  });
+
+  const sortert = Object.entries(grupper).sort(([a],[b]) => a.localeCompare(b, 'no'));
+  container.innerHTML = sortert.map(([grp, items]) =>
+    `<div class="shopping-section">
+      <div class="shopping-section-header">${grp} <span class="badge">${items.filter(({item})=>!item.ferdig).length}</span></div>
+      ${items.map(({item, idx}) =>
+        `<div class="shopping-item ${item.ferdig?'done':''}">
+          <input type="checkbox" ${item.ferdig?'checked':''} onchange="toggleVare(${idx},this.checked)">
+          <span>${item.tekst}</span>
+          <button class="del-item" onclick="fjernVare(${idx})" aria-label="Fjern">×</button>
+        </div>`
+      ).join('')}
+    </div>`
+  ).join('');
+}
+
+function toggleVare(idx, checked) {
+  state.handleliste[idx].ferdig = checked;
+  lagre();
+  renderShoppingList();
+}
+
+function fjernVare(idx) {
+  state.handleliste.splice(idx, 1);
+  lagre();
+  renderShoppingList();
+}
+
+function clearDone() {
+  state.handleliste = state.handleliste.filter(i=>!i.ferdig);
+  lagre();
+  renderShoppingList();
+  toast('Ferdige varer fjernet');
+}
+
+// --- Innstillinger ---
+function renderInnstillinger() {
+  const gl = document.getElementById('groups-list');
+  gl.innerHTML = state.grupper.map(g =>
+    `<div class="manage-row">
+      <span>${g}</span>
+      <button class="icon-btn" onclick="slettGruppe('${g}')" aria-label="Slett">×</button>
+    </div>`
+  ).join('') || '<div class="manage-row" style="color:var(--text3);font-size:13px">Ingen grupper ennå.</div>';
+
+  const sl = document.getElementById('stores-list');
+  sl.innerHTML = state.butikker.map(s => {
+    const antallAvd = Object.keys(state.avdelinger[s]||{}).length;
+    return `<div class="manage-row">
+      <div class="manage-row-left">
+        <span class="store-link" onclick="åpneAvdelinger('${s}')">${s}</span>
+        <span class="badge">${antallAvd} avd.</span>
+      </div>
+      <button class="icon-btn" onclick="slettButikk('${s}')" aria-label="Slett">×</button>
+    </div>`;
+  }).join('') || '<div class="manage-row" style="color:var(--text3);font-size:13px">Ingen butikker ennå.</div>';
+}
+
+let aktivButikk = null;
+function åpneAvdelinger(butikk) {
+  aktivButikk = butikk;
+  document.getElementById('avdeling-block').style.display='';
+  document.getElementById('avdeling-header').textContent = 'Avdelinger — ' + butikk;
+  renderAvdelinger();
+  document.getElementById('avdeling-block').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderAvdelinger() {
+  if(!aktivButikk) return;
+  const avd = state.avdelinger[aktivButikk] || {};
+  const list = document.getElementById('avdelinger-list');
+  list.innerHTML = Object.keys(avd).map(a =>
+    `<div class="manage-row">
+      <span>${a}</span>
+      <button class="icon-btn" onclick="slettAvdeling('${a}')" aria-label="Slett">×</button>
+    </div>`
+  ).join('') || '<div class="manage-row" style="color:var(--text3);font-size:13px">Ingen avdelinger ennå.</div>';
+}
+
+function addGroup() {
+  const v = document.getElementById('new-group-input').value.trim();
+  if(v && !state.grupper.includes(v)) { state.grupper.push(v); lagre(); renderInnstillinger(); }
+  document.getElementById('new-group-input').value='';
+}
+
+function addStore() {
+  const v = document.getElementById('new-store-input').value.trim();
+  if(v && !state.butikker.includes(v)) {
+    state.butikker.push(v);
+    state.avdelinger[v] = {};
+    DEFAULT_CATEGORIES.forEach(k => state.avdelinger[v][k] = [k]);
+    lagre(); renderInnstillinger();
+    toast(`${v} lagt til — trykk på navnet for å tilpasse avdelinger`);
+  }
+  document.getElementById('new-store-input').value='';
+}
+
+function addAvdeling() {
+  const v = document.getElementById('new-avdeling-input').value.trim();
+  if(v && aktivButikk) {
+    if(!state.avdelinger[aktivButikk]) state.avdelinger[aktivButikk]={};
+    if(!state.avdelinger[aktivButikk][v]) state.avdelinger[aktivButikk][v]=[];
+    lagre(); renderInnstillinger(); renderAvdelinger();
+  }
+  document.getElementById('new-avdeling-input').value='';
+}
+
+function slettGruppe(g) { state.grupper = state.grupper.filter(x=>x!==g); lagre(); renderInnstillinger(); }
+function slettButikk(s) {
+  state.butikker = state.butikker.filter(x=>x!==s);
+  delete state.avdelinger[s];
+  if(aktivButikk===s) { aktivButikk=null; document.getElementById('avdeling-block').style.display='none'; }
+  lagre(); renderInnstillinger();
+}
+function slettAvdeling(a) { delete state.avdelinger[aktivButikk][a]; lagre(); renderInnstillinger(); renderAvdelinger(); }
+
+renderOppskrifter();
+</script>
+</body>
+</html>
