@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<title>Handleliste</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #eeede9;
+  --text: #1a1a18; --text2: #6b6b67; --text3: #a0a09b;
+  --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+  --radius: 10px; --radius-lg: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a18; --bg2: #252522; --bg3: #2e2e2b;
+    --text: #f0efea; --text2: #9a9a94; --text3: #606059;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+  }
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 16px; line-height: 1.5; padding-bottom: 90px; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 0.5px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0 8px; background: none; border: none; color: var(--text3); font-size: 11px; font-family: inherit; cursor: pointer; transition: color 0.15s; -webkit-tap-highlight-color: transparent; }
+.nav-btn.active { color: var(--text); }
+.nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.view { display: none; } .view.active { display: block; }
+.page-header { padding: 20px 16px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+.page-header h1 { font-size: 17px; font-weight: 600; }
+.header-btn { background: none; border: none; color: var(--text2); font-size: 14px; cursor: pointer; font-family: inherit; padding: 4px 0; }
+.chips-scroll { display: flex; gap: 6px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; border-bottom: 0.5px solid var(--border); }
+.chips-scroll::-webkit-scrollbar { display: none; }
+.chip { padding: 5px 14px; border-radius: 20px; font-size: 13px; white-space: nowrap; cursor: pointer; border: 0.5px solid var(--border2); background: transparent; color: var(--text2); font-family: inherit; transition: all 0.15s; flex-shrink: 0; }
+.chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+.recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; padding: 14px 16px; }
+.recipe-card { background: var(--bg2); border-radius: var(--radius-lg); padding: 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.recipe-card:active { opacity: 0.7; }
+.recipe-card h3 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.recipe-card .meta { font-size: 12px; color: var(--text3); margin-bottom: 8px; }
+.tags-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.mini-tag { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: var(--bg3); color: var(--text2); }
+.detail-header { padding: 16px 16px 12px; border-bottom: 0.5px solid var(--border); }
+.back-row { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text2); cursor: pointer; background: none; border: none; font-family: inherit; padding: 0 0 12px; }
+.back-row svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.detail-header h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.detail-header .meta { font-size: 13px; color: var(--text2); }
+.ingredient-section { padding: 0 16px; }
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); padding: 16px 0 8px; }
+.ingredient-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 0.5px solid var(--border); font-size: 15px; }
+.ingredient-row:last-child { border-bottom: none; }
+.ingredient-row input[type=checkbox] { width: 22px; height: 22px; flex-shrink: 0; cursor: pointer; accent-color: #000; }
+@media (prefers-color-scheme: dark) { .ingredient-row input[type=checkbox] { accent-color: #fff; } }
+.ingredient-row.done span { text-decoration: line-through; color: var(--text3); }
+.action-bar { padding: 14px 16px; border-top: 0.5px solid var(--border); position: sticky; bottom: 70px; background: var(--bg); }
+.primary-btn { width: 100%; padding: 13px; background: var(--text); color: var(--bg); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+.primary-btn:active { opacity: 0.75; }
+.store-bar { padding: 10px 16px; border-bottom: 0.5px solid var(--border); }
+.store-select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 14px; background: var(--bg2); color: var(--text); font-family: inherit; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.shopping-section { padding: 0 16px; }
+.shopping-section-header { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); padding: 16px 0 8px; display: flex; justify-content: space-between; align-items: center; }
+.shopping-item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 0.5px solid var(--border); font-size: 15px; }
+.shopping-item:last-child { border-bottom: none; }
+.shopping-item input[type=checkbox] { width: 22px; height: 22px; flex-shrink: 0; accent-color: #000; }
+@media (prefers-color-scheme: dark) { .shopping-item input[type=checkbox] { accent-color: #fff; } }
+.shopping-item.done span { text-decoration: line-through; color: var(--text3); }
+.shopping-item .del-item { margin-left: auto; background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px 8px; font-size: 20px; line-height: 1; flex-shrink: 0; }
+.form-section { padding: 14px 16px; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 15px; background: var(--bg2); color: var(--text); font-family: inherit; }
+.form-group textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
+.form-row { display: flex; gap: 8px; }
+.form-row .primary-btn { flex: 2; }
+.cancel-btn { flex: 1; padding: 13px; background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.manage-block { margin: 12px 16px; border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.manage-block-header { padding: 12px 14px; background: var(--bg2); font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); }
+.manage-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 0.5px solid var(--border); font-size: 14px; }
+.manage-row:last-child { border-bottom: none; }
+.manage-row-left { display: flex; align-items: center; gap: 8px; }
+.store-link { color: var(--text); cursor: pointer; font-weight: 500; }
+.icon-btn { background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px 8px; font-size: 20px; line-height: 1; }
+.inline-add { display: flex; gap: 8px; padding: 10px 14px; background: var(--bg2); border-top: 0.5px solid var(--border); }
+.inline-add input { flex: 1; padding: 8px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 14px; background: var(--bg); color: var(--text); font-family: inherit; }
+.inline-add button { padding: 8px 16px; background: var(--text); color: var(--bg); border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.empty-state { padding: 48px 24px; text-align: center; color: var(--text3); font-size: 14px; line-height: 1.8; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: var(--bg3); color: var(--text3); }
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; white-space: nowrap; z-index: 200; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.top-pad { padding-top: 8px; }
+.avd-row { display: flex; align-items: center; padding: 10px 14px; border-bottom: 0.5px solid var(--border); font-size: 14px; gap: 10px; background: var(--bg); transition: background 0.1s; }
+.avd-row:last-child { border-bottom: none; }
+.avd-row.dragging { opacity: 0.4; }
+.avd-row.drag-over { background: var(--bg3); }
+.drag-handle { color: var(--text3); cursor: grab; font-size: 18px; line-height: 1; touch-action: none; padding: 2px 4px; user-select: none; }
+.avd-name { flex: 1; }
+.ing-preview-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+.ing-preview-row:last-child { border-bottom: none; }
+.ing-preview-row span { flex: 1; color: var(--text2); }
+.ing-preview-row select { padding: 4px 8px; border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 12px; background: var(--bg2); color: var(--text); font-family: inherit; max-width: 160px; }
+.finn-card { margin: 10px 16px; background: var(--bg2); border-radius: var(--radius-lg); padding: 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.finn-card:active { opacity: 0.7; }
+.finn-card h3 { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+.finn-match-bar { height: 4px; background: var(--bg3); border-radius: 2px; margin-bottom: 8px; overflow: hidden; }
+.finn-match-fill { height: 100%; background: var(--text); border-radius: 2px; transition: width 0.3s; }
+.finn-meta { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+.finn-missing { font-size: 12px; color: var(--text3); }
+.finn-missing span { color: var(--text3); } display: flex; align-items: center; justify-content: center; padding: 48px; color: var(--text3); font-size: 14px; gap: 10px; }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--text2); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="view-oppskrifter" class="view active">
+  <div class="page-header">
+    <h1>Oppskrifter</h1>
+    <button class="header-btn" onclick="showAddRecipe()">+ Legg til</button>
+  </div>
+  <div class="chips-scroll" id="group-chips"></div>
+  <div id="recipe-list-panel">
+    <div id="recipe-grid" class="recipe-grid"></div>
+  </div>
+  <div id="recipe-detail-panel" style="display:none">
+    <div class="detail-header">
+      <button class="back-row" onclick="showRecipeList()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Tilbake
+      </button>
+      <h2 id="detail-title"></h2>
+      <div class="meta" id="detail-meta"></div>
+    </div>
+    <div class="ingredient-section">
+      <div class="section-label">Ingredienser — huk av det du har</div>
+      <div id="ingredient-list"></div>
+    </div>
+    <div class="action-bar">
+      <button class="primary-btn" onclick="addToShoppingList()">Legg til i handleliste</button>
+    </div>
+  </div>
+  <div id="add-recipe-panel" style="display:none">
+    <div class="detail-header">
+      <button class="back-row" onclick="showRecipeList()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Tilbake
+      </button>
+      <h2>Ny oppskrift</h2>
+    </div>
+    <div class="form-section">
+      <div class="form-group">
+        <label>Navn</label>
+        <input type="text" id="new-name" placeholder="f.eks. Kjøttgryte i crockpot">
+      </div>
+      <div class="form-group">
+        <label>Grupper (kommaseparert)</label>
+        <input type="text" id="new-groups" placeholder="f.eks. crockpot, middag">
+      </div>
+      <div class="form-group">
+        <label>Ingredienser (én per linje)</label>
+        <textarea id="new-ingredients" placeholder="400g kjøttdeig&#10;1 løk&#10;2 hvitløksfedd&#10;1 boks hermetiske tomater" oninput="previewIngredients()"></textarea>
+      </div>
+      <div id="ingredient-preview" style="display:none">
+        <div class="form-group" style="margin-bottom:4px"><label>Rett opp kategori hvis feil</label></div>
+        <div id="ingredient-preview-list" style="margin-bottom:14px"></div>
+      </div>
+      <div class="form-row">
+        <button class="cancel-btn" onclick="showRecipeList()">Avbryt</button>
+        <button class="primary-btn" onclick="saveRecipe()">Lagre</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view-handleliste" class="view">
+  <div class="page-header">
+    <h1>Handleliste</h1>
+    <button class="header-btn" onclick="clearDone()">Fjern ferdig</button>
+  </div>
+  <div class="store-bar">
+    <select class="store-select" id="store-select" onchange="renderShoppingList()">
+      <option value="">Ingen butikk valgt — vis etter kategori</option>
+    </select>
+  </div>
+  <div id="shopping-container"></div>
+</div>
+
+<div id="view-finn" class="view">
+  <div class="page-header">
+    <h1>Finn oppskrift</h1>
+    <button class="header-btn" onclick="clearFinn()">Tøm</button>
+  </div>
+  <div class="form-section" style="padding-bottom:0">
+    <div class="form-group">
+      <label>Hva har du hjemme? (kommaseparert)</label>
+      <input type="text" id="finn-input" placeholder="f.eks. kylling, paprika, løk" oninput="finnOppskrifter()">
+    </div>
+  </div>
+  <div id="finn-results"></div>
+</div>
+
+<div id="view-innstillinger" class="view">
+  <div class="page-header"><h1>Innstillinger</h1></div>
+  <div class="top-pad"></div>
+  <div class="manage-block">
+    <div class="manage-block-header">Butikker <span style="font-size:12px;font-weight:400;color:var(--text3)">Trykk navn for avdelinger</span></div>
+    <div id="stores-list"></div>
+    <div class="inline-add">
+      <input type="text" id="new-store-input" placeholder="Ny butikk..." onkeydown="if(event.key==='Enter')addStore()">
+      <button onclick="addStore()">Legg til</button>
+    </div>
+  </div>
+  <div class="manage-block" id="avdeling-block" style="display:none">
+    <div class="manage-block-header" id="avdeling-header">Avdelinger</div>
+    <p style="padding:10px 14px 0;font-size:12px;color:var(--text3)">Dra for å endre rekkefølgen — handlelisten følger denne rekkefølgen.</p>
+    <div id="avdelinger-list"></div>
+    <div class="inline-add">
+      <input type="text" id="new-avdeling-input" placeholder="f.eks. Frukt og grønt..." onkeydown="if(event.key==='Enter')addAvdeling()">
+      <button onclick="addAvdeling()">Legg til</button>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchView('oppskrifter', this)">
+    <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    Oppskrifter
+  </button>
+  <button class="nav-btn" onclick="switchView('handleliste', this)">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    Handleliste
+  </button>
+  <button class="nav-btn" onclick="switchView('finn', this)">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Finn
+  </button>
+  <button class="nav-btn" onclick="switchView('innstillinger', this)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Innstillinger
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbyUj7OJvJaS0FmQ79lr4bz5XMCY2jUwKiCkfCCFz3ZF2MWMHSXhK082P299wG8LBziQ/exec';
+const DEFAULT_AVDELINGER = ['Frukt og grønt','Kjøtt og fisk','Meieri og egg','Brød og kornvarer','Tørrmat','Hermetikk','Krydder og saus','Frysevarer','Drikke','Annet'];
+
+let state = {
+  oppskrifter: [],
+  grupper: [],
+  butikker: {},
+  handleliste: [],
+  keywords: {},
+  aktivGruppe: 'alle',
+  aktivOppskrift: null,
+  valgtButikk: '',
+  loaded: false
+};
+
+// --- API ---
+async function apiGet() {
+  const res = await fetch(API + '?action=getAll');
+  return res.json();
+}
+async function apiPost(data) {
+  const res = await fetch(API, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  return res.json();
+}
+
+async function loadFromSheet() {
+  const grid = document.getElementById('recipe-grid');
+  grid.innerHTML = '<div class="loading"><div class="spinner"></div> Laster fra Google Sheets...</div>';
+  try {
+    const data = await apiGet();
+    state.oppskrifter = data.recipes || [];
+    state.keywords = data.keywords || {};
+    state.butikker = data.stores || {};
+    state.handleliste = data.shoppingList || [];
+    state.valgtButikk = localStorage.getItem('siste_butikk') || '';
+    // Build grupper from recipes
+    const gSet = new Set();
+    state.oppskrifter.forEach(r => (r.grupper||[]).forEach(g => gSet.add(g)));
+    state.grupper = [...gSet];
+    state.loaded = true;
+    renderOppskrifter();
+    toast('Lastet inn');
+  } catch(e) {
+    grid.innerHTML = '<div class="empty-state">Kunne ikke koble til Google Sheets.<br>Sjekk internettforbindelsen.</div>';
+  }
+}
+
+// --- Toast ---
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// --- Navigation ---
+function switchView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  btn.classList.add('active');
+  if(name === 'finn') { document.getElementById('finn-input').value=''; document.getElementById('finn-results').innerHTML=''; }
+  if(name === 'oppskrifter') { showRecipeList(); renderOppskrifter(); }
+  if(name === 'handleliste') { renderStoreSelect(); renderShoppingList(); }
+  if(name === 'innstillinger') renderInnstillinger();
+}
+
+// --- Category guessing ---
+function guessCategory(text) {
+  const t = text.toLowerCase();
+  // Check learned keywords first
+  for (const [kw, kat] of Object.entries(state.keywords)) {
+    if (t.includes(kw)) return kat;
+  }
+  if(/melk|fløte|rømme|yoghurt|ost|smør|egg/.test(t)) return 'Meieri og egg';
+  if(/kjøtt|kylling|svin|laks|fisk|reke|bacon|pølse|biff|torsk|sei|makrell/.test(t)) return 'Kjøtt og fisk';
+  if(/løk|hvitløk|gulrot|tomat|salat|spinat|paprika|potet|zucchini|agurk|brokkoli|purre|sopp|kål|selleri|eple|banan|sitron|lime|appelsin|pære|bær/.test(t)) return 'Frukt og grønt';
+  if(/brød|pasta|ris|mel|havre|nudl/.test(t)) return 'Brød og kornvarer';
+  if(/olje|saus|eddik|soya|sennep|ketchup|kraft|buljong|dressing/.test(t)) return 'Krydder og saus';
+  if(/boks|hermetisk|bønne|linse|kikerter/.test(t)) return 'Hermetikk';
+  if(/frys/.test(t)) return 'Frysevarer';
+  if(/vann|juice|brus|kaffe|te|øl|vin/.test(t)) return 'Drikke';
+  return 'Tørrmat';
+}
+
+function previewIngredients() {
+  const linjer = document.getElementById('new-ingredients').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const preview = document.getElementById('ingredient-preview');
+  const list = document.getElementById('ingredient-preview-list');
+  if(!linjer.length) { preview.style.display='none'; return; }
+  preview.style.display='';
+  list.innerHTML = linjer.map((l, i) => {
+    const kat = guessCategory(l);
+    const opts = DEFAULT_AVDELINGER.map(k => `<option value="${k}" ${k===kat?'selected':''}>${k}</option>`).join('');
+    return `<div class="ing-preview-row"><span>${l}</span><select id="ing-kat-${i}">${opts}</select></div>`;
+  }).join('');
+}
+
+// --- Recipes ---
+function renderOppskrifter() {
+  const chips = document.getElementById('group-chips');
+  chips.innerHTML = ['alle', ...state.grupper].map(g =>
+    `<button class="chip ${state.aktivGruppe===g?'active':''}" onclick="filtrerGruppe('${g}')">${g==='alle'?'Alle':g}</button>`
+  ).join('');
+  const grid = document.getElementById('recipe-grid');
+  const vis = state.aktivGruppe==='alle' ? state.oppskrifter : state.oppskrifter.filter(r=>r.grupper.includes(state.aktivGruppe));
+  if(!vis.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">Ingen oppskrifter ennå.<br>Trykk <strong>+ Legg til</strong> for å starte.</div>`;
+    return;
+  }
+  grid.innerHTML = vis.map(r =>
+    `<div class="recipe-card" onclick="åpneOppskrift('${r.id}')">
+      <h3>${r.navn}</h3>
+      <div class="meta">${r.ingredienser.length} ingrediens${r.ingredienser.length!==1?'er':''}</div>
+      <div class="tags-row">${(r.grupper||[]).map(g=>`<span class="mini-tag">${g}</span>`).join('')}</div>
+    </div>`
+  ).join('');
+}
+
+function filtrerGruppe(g) { state.aktivGruppe = g; renderOppskrifter(); }
+
+function showRecipeList() {
+  document.getElementById('recipe-list-panel').style.display='';
+  document.getElementById('recipe-detail-panel').style.display='none';
+  document.getElementById('add-recipe-panel').style.display='none';
+}
+function showAddRecipe() {
+  document.getElementById('recipe-list-panel').style.display='none';
+  document.getElementById('recipe-detail-panel').style.display='none';
+  document.getElementById('add-recipe-panel').style.display='';
+}
+
+async function saveRecipe() {
+  const navn = document.getElementById('new-name').value.trim();
+  if(!navn) { toast('Oppskriften trenger et navn'); return; }
+  const grupper = document.getElementById('new-groups').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const linjer = document.getElementById('new-ingredients').value.split('\n').map(s=>s.trim()).filter(Boolean);
+
+  // Collect category overrides and learn new keywords
+  const newKeywords = {};
+  const ingredienser = linjer.map((l, i) => {
+    const sel = document.getElementById('ing-kat-'+i);
+    const kategori = sel ? sel.value : guessCategory(l);
+    const guessed = guessCategory(l);
+    if(kategori !== guessed) {
+      // Learn the main word as a keyword
+      const word = l.toLowerCase().replace(/[0-9]+g?|dl|liter|stk|ss|ts|\s/g,'').trim();
+      if(word.length > 2) newKeywords[word] = kategori;
+    }
+    return { tekst: l, kategori };
+  });
+
+  // Update local keywords
+  Object.assign(state.keywords, newKeywords);
+
+  grupper.forEach(g => { if(!state.grupper.includes(g)) state.grupper.push(g); });
+  const id = String(Date.now());
+  const recipe = { id, navn, grupper, ingredienser };
+  state.oppskrifter.push(recipe);
+
+  showRecipeList();
+  renderOppskrifter();
+  document.getElementById('new-name').value='';
+  document.getElementById('new-groups').value='';
+  document.getElementById('new-ingredients').value='';
+  document.getElementById('ingredient-preview').style.display='none';
+  toast('Lagrer...');
+
+  await apiPost({ action: 'saveRecipe', ...recipe, keywords: newKeywords });
+  toast('Oppskrift lagret');
+}
+
+function åpneOppskrift(id) {
+  state.aktivOppskrift = id;
+  const r = state.oppskrifter.find(x=>x.id===id);
+  document.getElementById('detail-title').textContent = r.navn;
+  document.getElementById('detail-meta').textContent = (r.grupper||[]).join(' · ');
+  document.getElementById('ingredient-list').innerHTML = r.ingredienser.map((ing, i) =>
+    `<div class="ingredient-row" id="ing-${i}">
+      <input type="checkbox" onchange="toggleIng(${i},this.checked)">
+      <span>${ing.tekst}</span>
+    </div>`
+  ).join('');
+  document.getElementById('recipe-list-panel').style.display='none';
+  document.getElementById('recipe-detail-panel').style.display='';
+}
+
+function toggleIng(i, checked) {
+  const row = document.getElementById('ing-'+i);
+  if(checked) row.classList.add('done'); else row.classList.remove('done');
+}
+
+// --- Amount merging ---
+function parseAmount(tekst) {
+  const m = tekst.match(/^([\d.,]+)\s*(g|kg|dl|l|ml|stk|ss|ts|pk|boks|neve|glass|klype|skive|fedd|båt|neve|kvast|stilk|bunt)?\s+(.+)/i);
+  if(m) return { amount: parseFloat(m[1].replace(',','.')), unit: (m[2]||'').toLowerCase(), name: m[3].trim() };
+  // Also try "X name" with no unit
+  const m2 = tekst.match(/^([\d.,]+)\s+(.+)/);
+  if(m2) return { amount: parseFloat(m2[1].replace(',','.')), unit: '', name: m2[2].trim() };
+  return null;
+}
+
+function mergeIngredients(items) {
+  const map = {};
+  items.forEach(item => {
+    const parsed = parseAmount(item.tekst);
+    const name = parsed ? parsed.name.toLowerCase().trim() : item.tekst.toLowerCase().trim();
+    if(!map[name]) {
+      map[name] = { tekst: item.tekst, kategori: item.kategori, count: 1, parsed: parsed ? {...parsed} : null };
+    } else {
+      map[name].count++;
+      const existing = map[name].parsed;
+      if(parsed && existing && parsed.unit === existing.unit) {
+        existing.amount += parsed.amount;
+        const unitStr = existing.unit ? existing.unit + ' ' : ' ';
+        map[name].tekst = existing.amount + unitStr + existing.name;
+      } else {
+        const cleanName = parsed ? parsed.name : item.tekst;
+        map[name].tekst = cleanName + ' (' + map[name].count + ' oppskrifter)';
+      }
+    }
+  });
+  return Object.values(map);
+}
+
+async function addToShoppingList() {
+  const r = state.oppskrifter.find(x=>x.id===state.aktivOppskrift);
+  const unchecked = r.ingredienser.filter((_, i) => !document.getElementById('ing-'+i).classList.contains('done'));
+  const merged = [...state.handleliste, ...unchecked];
+  state.handleliste = mergeIngredients(merged);
+  toast('Lagrer handleliste...');
+  await apiPost({ action: 'saveShoppingList', items: state.handleliste });
+  toast(`Lagt til i handlelisten`);
+}
+
+// --- Shopping list ---
+function renderStoreSelect() {
+  const sel = document.getElementById('store-select');
+  sel.innerHTML = '<option value="">Ingen butikk valgt — vis etter kategori</option>' +
+    Object.keys(state.butikker).map(s=>`<option value="${s}" ${state.valgtButikk===s?'selected':''}>${s}</option>`).join('');
+}
+
+function renderShoppingList() {
+  state.valgtButikk = document.getElementById('store-select').value;
+  if(state.valgtButikk) localStorage.setItem('siste_butikk', state.valgtButikk);
+  const container = document.getElementById('shopping-container');
+  if(!state.handleliste.length) {
+    container.innerHTML = '<div class="empty-state">Handlelisten er tom.<br>Gå til en oppskrift og trykk<br>«Legg til i handleliste».</div>';
+    return;
+  }
+  const grupper = {};
+  state.handleliste.forEach((item, idx) => {
+    let key = item.kategori || 'Annet';
+    if(state.valgtButikk && state.butikker[state.valgtButikk]) {
+      const avd = state.butikker[state.valgtButikk];
+      if(avd.includes(item.kategori)) key = item.kategori;
+      else key = 'Annet';
+    }
+    if(!grupper[key]) grupper[key] = [];
+    grupper[key].push({ item, idx });
+  });
+
+  let keys;
+  const avdOrder = state.valgtButikk ? (state.butikker[state.valgtButikk] || []) : [];
+  if(avdOrder.length) {
+    const inOrder = avdOrder.filter(k => grupper[k]);
+    const rest = Object.keys(grupper).filter(k => !avdOrder.includes(k));
+    keys = [...inOrder, ...rest];
+  } else {
+    keys = Object.keys(grupper).sort((a,b)=>a.localeCompare(b,'no'));
+  }
+
+  container.innerHTML = keys.map(grp => {
+    const items = grupper[grp];
+    const igjen = items.filter(({item})=>!item.ferdig).length;
+    return `<div class="shopping-section">
+      <div class="shopping-section-header">${grp} <span class="badge">${igjen}</span></div>
+      ${items.map(({item, idx}) =>
+        `<div class="shopping-item ${item.ferdig?'done':''}">
+          <input type="checkbox" ${item.ferdig?'checked':''} onchange="toggleVare(${idx},this.checked)">
+          <span>${item.tekst}</span>
+          <button class="del-item" onclick="fjernVare(${idx})">×</button>
+        </div>`
+      ).join('')}
+    </div>`;
+  }).join('');
+}
+
+async function toggleVare(idx, checked) {
+  state.handleliste[idx].ferdig = checked;
+  renderShoppingList();
+  await apiPost({ action: 'saveShoppingList', items: state.handleliste });
+}
+
+async function fjernVare(idx) {
+  state.handleliste.splice(idx, 1);
+  renderShoppingList();
+  await apiPost({ action: 'saveShoppingList', items: state.handleliste });
+}
+
+async function clearDone() {
+  state.handleliste = state.handleliste.filter(i=>!i.ferdig);
+  renderShoppingList();
+  await apiPost({ action: 'saveShoppingList', items: state.handleliste });
+  toast('Ferdige varer fjernet');
+}
+
+// --- Innstillinger ---
+function renderInnstillinger() {
+  document.getElementById('stores-list').innerHTML = Object.keys(state.butikker).map(s => {
+    const antall = (state.butikker[s]||[]).length;
+    return `<div class="manage-row">
+      <div class="manage-row-left">
+        <span class="store-link" onclick="åpneAvdelinger('${s}')">${s}</span>
+        <span class="badge">${antall} avd.</span>
+      </div>
+      <button class="icon-btn" onclick="slettButikk('${s}')">×</button>
+    </div>`;
+  }).join('') || '<div class="manage-row" style="color:var(--text3);font-size:13px">Ingen butikker ennå.</div>';
+}
+
+let aktivButikk = null;
+function åpneAvdelinger(butikk) {
+  aktivButikk = butikk;
+  document.getElementById('avdeling-block').style.display='';
+  document.getElementById('avdeling-header').textContent = 'Avdelinger — ' + butikk;
+  renderAvdelinger();
+  setTimeout(() => document.getElementById('avdeling-block').scrollIntoView({ behavior: 'smooth' }), 50);
+}
+
+function renderAvdelinger() {
+  if(!aktivButikk) return;
+  const avd = state.butikker[aktivButikk] || [];
+  const list = document.getElementById('avdelinger-list');
+  if(!avd.length) {
+    list.innerHTML = '<div class="manage-row" style="color:var(--text3);font-size:13px">Ingen avdelinger ennå.</div>';
+    return;
+  }
+  list.innerHTML = avd.map((a, i) =>
+    `<div class="avd-row" draggable="true" data-index="${i}"
+      ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})"
+      ondrop="dragDrop(event,${i})" ondragend="dragEnd()"
+      ontouchstart="touchStart(event,${i})" ontouchmove="touchMove(event)" ontouchend="touchEnd(event,${i})">
+      <span class="drag-handle">⠿</span>
+      <span class="avd-name">${a}</span>
+      <button class="icon-btn" onclick="slettAvdeling(${i})">×</button>
+    </div>`
+  ).join('');
+}
+
+let dragIdx=null, touchDragIdx=null, touchTargetIdx=null;
+function dragStart(e,i){dragIdx=i;setTimeout(()=>e.target.classList.add('dragging'),0);}
+function dragOver(e,i){e.preventDefault();document.querySelectorAll('.avd-row').forEach(r=>r.classList.remove('drag-over'));if(i!==dragIdx)e.currentTarget.classList.add('drag-over');}
+function dragDrop(e,i){e.preventDefault();if(dragIdx===null||dragIdx===i)return;const avd=state.butikker[aktivButikk];const[moved]=avd.splice(dragIdx,1);avd.splice(i,0,moved);saveStore(aktivButikk);renderAvdelinger();}
+function dragEnd(){document.querySelectorAll('.avd-row').forEach(r=>{r.classList.remove('dragging');r.classList.remove('drag-over');});dragIdx=null;}
+function touchStart(e,i){touchDragIdx=i;e.currentTarget.classList.add('dragging');}
+function touchMove(e){e.preventDefault();const touch=e.touches[0];const el=document.elementFromPoint(touch.clientX,touch.clientY);const row=el&&el.closest('.avd-row');document.querySelectorAll('.avd-row').forEach(r=>r.classList.remove('drag-over'));if(row){touchTargetIdx=parseInt(row.dataset.index);if(touchTargetIdx!==touchDragIdx)row.classList.add('drag-over');}}
+function touchEnd(e,i){document.querySelectorAll('.avd-row').forEach(r=>{r.classList.remove('dragging');r.classList.remove('drag-over');});if(touchDragIdx!==null&&touchTargetIdx!==null&&touchDragIdx!==touchTargetIdx){const avd=state.butikker[aktivButikk];const[moved]=avd.splice(touchDragIdx,1);avd.splice(touchTargetIdx,0,moved);saveStore(aktivButikk);renderAvdelinger();}touchDragIdx=null;touchTargetIdx=null;}
+
+async function saveStore(butikk) {
+  await apiPost({ action: 'saveStore', butikk, rekkefølge: state.butikker[butikk] });
+}
+
+async function addStore() {
+  const v = document.getElementById('new-store-input').value.trim();
+  if(v && !state.butikker[v]) {
+    state.butikker[v] = [...DEFAULT_AVDELINGER];
+    renderInnstillinger();
+    toast('Lagrer...');
+    await saveStore(v);
+    toast(`${v} lagt til`);
+  }
+  document.getElementById('new-store-input').value='';
+}
+
+async function addAvdeling() {
+  const v = document.getElementById('new-avdeling-input').value.trim();
+  if(v && aktivButikk) {
+    if(!state.butikker[aktivButikk].includes(v)) state.butikker[aktivButikk].push(v);
+    renderInnstillinger(); renderAvdelinger();
+    await saveStore(aktivButikk);
+  }
+  document.getElementById('new-avdeling-input').value='';
+}
+
+async function slettButikk(s) {
+  delete state.butikker[s];
+  if(aktivButikk===s){aktivButikk=null;document.getElementById('avdeling-block').style.display='none';}
+  renderInnstillinger();
+  await apiPost({ action: 'deleteStore', butikk: s });
+}
+
+async function slettAvdeling(i) {
+  state.butikker[aktivButikk].splice(i,1);
+  renderAvdelinger(); renderInnstillinger();
+  await saveStore(aktivButikk);
+}
+
+// --- Finn oppskrift ---
+const PANTRY_CATEGORIES = ['Tørrmat','Hermetikk','Krydder og saus','Brød og kornvarer','Drikke'];
+
+function isFresh(ingredient) {
+  return !PANTRY_CATEGORIES.includes(ingredient.kategori);
+}
+
+function clearFinn() {
+  document.getElementById('finn-input').value = '';
+  document.getElementById('finn-results').innerHTML = '';
+}
+
+function finnOppskrifter() {
+  const input = document.getElementById('finn-input').value;
+  const tilgjengelig = input.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  const container = document.getElementById('finn-results');
+
+  if(!tilgjengelig.length) { container.innerHTML = ''; return; }
+  if(!state.oppskrifter.length) {
+    container.innerHTML = '<div class="empty-state">Ingen oppskrifter å søke i ennå.</div>';
+    return;
+  }
+
+  const scored = state.oppskrifter.map(r => {
+    const freshIngs = r.ingredienser.filter(isFresh);
+    if(!freshIngs.length) return null;
+    let matches = 0;
+    const missing = [];
+    freshIngs.forEach(ing => {
+      const name = ing.tekst.toLowerCase();
+      const hit = tilgjengelig.some(t => name.includes(t) || t.includes(name.replace(/[0-9]+\s*(g|kg|dl|l|stk|glass|ss|ts)?\s*/i,'')));
+      if(hit) matches++;
+      else missing.push(ing.tekst);
+    });
+    const score = matches / freshIngs.length;
+    return { r, score, matches, total: freshIngs.length, missing };
+  }).filter(x => x && x.matches > 0);
+
+  scored.sort((a,b) => b.score - a.score);
+
+  if(!scored.length) {
+    container.innerHTML = '<div class="empty-state">Ingen oppskrifter matcher.<br>Prøv andre ingredienser.</div>';
+    return;
+  }
+
+  container.innerHTML = scored.map(({r, score, matches, total, missing}) => {
+    const pct = Math.round(score * 100);
+    const missingText = missing.length ? 'Mangler: ' + missing.slice(0,4).join(', ') + (missing.length>4?' ...':'') : 'Har alt!';
+    return `<div class="finn-card" onclick="åpneOppskriftFrFinn('${r.id}')">
+      <h3>${r.navn}</h3>
+      <div class="finn-match-bar"><div class="finn-match-fill" style="width:${pct}%"></div></div>
+      <div class="finn-meta">${matches} av ${total} ferske ingredienser — ${pct}% match</div>
+      <div class="finn-missing">${missingText}</div>
+    </div>`;
+  }).join('');
+}
+
+function åpneOppskriftFrFinn(id) {
+  åpneOppskrift(id);
+  // Switch to oppskrifter view
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-oppskrifter').classList.add('active');
+  document.querySelectorAll('.nav-btn')[0].classList.add('active');
+}
+
+// Start
+loadFromSheet();
+</script>
+</body>
+</html>
